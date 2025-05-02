@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { useFonts } from 'expo-font';
 import BVImage from '../assets/images/barangay-voice.png';
 //
 const Success: React.FC = () => {
@@ -8,13 +9,17 @@ const Success: React.FC = () => {
     // Logic to navigate back to login screen
   };
 
+    const [fontsLoaded] = useFonts({
+      'Poppins-Regular': require('../assets/fonts/Poppins.ttf'),
+      'Anton-Regular': require('../assets/fonts/Anton.ttf'),
+    });
+
   return (
     <View style={styles.container}>
       <View style={styles.titleContainer}>
         <Image source={BVImage} style={styles.titleImage} />
       </View>
       <View style={styles.formContainer}>
-        <Text style={styles.title}>Successful!</Text>
         <View style={styles.icon}>
           <Svg width="100" height="100" viewBox="0 0 100 100" fill="none">
             <Circle cx="50" cy="50" r="49" fill="#F72C5B" />
@@ -22,8 +27,9 @@ const Success: React.FC = () => {
             <Path d="M45.6465 58L62.6465 41" stroke="#F9F5F5" strokeWidth="3" strokeLinecap="round" />
           </Svg>
         </View>
+        <Text style={styles.title}>Password Changed!</Text>
         <Text style={styles.message}>
-          Congratulations! Your password has been changed. Click continue to login.
+           Your password has been changed successfully.
         </Text>
         <TouchableOpacity onPress={handleReturnToLogin} style={styles.button}>
           <Text style={styles.buttonText}>Return to Login</Text>
@@ -41,47 +47,62 @@ const styles = StyleSheet.create({
     backgroundColor: '#A7D477',
   },
   titleContainer: {
-    marginBottom: 20,
+    width: '100%',
+    backgroundColor: '#A7D477',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
   },
   titleImage: {
-    width: 302,
-    height: 302,
+    width: 250,
+    height: 250,
+    resizeMode: 'contain',
   },
   formContainer: {
     width: '100%',
     height: 530,
     backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
     alignItems: 'center',
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
+    fontFamily: "Poppins-Regular",
     color: '#1E1E1E',
     textAlign: 'center',
-    marginBottom: 20,
   },
   icon: {
-    marginBottom: 40,
+    marginBottom: 10,
+    padding: 30
   },
+
   message: {
-    fontSize: 18,
-    color: '#1E1E1E',
+    width: 253,
+    fontSize: 16,
+    fontFamily: "Poppins-Regular",
+    color: '#989898',
     textAlign: 'center',
     marginBottom: 30,
-    opacity: 0.5
+    marginTop: 20
   },
+
   button: {
-    width: '100%',
-    height: 48,
+    width: 246,
+    height: 56,
+    flexShrink: 0,
     backgroundColor: '#F72C5B',
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 20
   },
   buttonText: {
     color: 'white',
+    fontFamily: 'Anton-Regular',
+    textAlign: 'center',
+    fontSize: 30,
+    fontWeight: '400',
+    marginTop: -7,
   },
 });
 
