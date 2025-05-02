@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import BVImage from '../assets/images/BV.png';
-
+//
 const OtpVerification: React.FC = () => {
   const [otp, setOtp] = useState(['', '', '', '']);
   const [countdown, setCountdown] = useState(60);

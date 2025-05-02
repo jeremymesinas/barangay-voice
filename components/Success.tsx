@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import BVImage from '../assets/images/barangay-voice.png';
-
+//
 const Success: React.FC = () => {
   const handleReturnToLogin = () => {
     // Logic to navigate back to login screen
