@@ -1,14 +1,43 @@
 import React, { useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, Image, SafeAreaView, ActivityIndicator, StatusBar } from "react-native";
 import { useFonts } from "expo-font";
+import { useState } from "react";
 import ProfileCard from "../../components/ProfileCard";
 import ActionButton from "../../components/ActionButton";
 import AnnouncementCard from "../../components/AnnouncementCard";
 import { ProtectedRoute } from "@/contexts/ProtectedRoutes";
+import { fetchAnnouncements } from "../../scripts/account-actions";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Add the Announcement interface at the top of the file
+interface Announcement {
+  id?: string;
+  announcement_header: string;
+  announcement_content: string;
+  created_at: string;
+}
+
 export default function LandingPage() {
+  // Type the announcements state
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
+
+  useEffect(() => {
+    const loadAnnouncements = async () => {
+      try {
+        const data = await fetchAnnouncements();
+        setAnnouncements(data);
+      } catch (error) {
+        console.error("Failed to load announcements:", error);
+      } finally {
+        setLoadingAnnouncements(false);
+      }
+    };
+
+    loadAnnouncements();
+  }, []);
+
   const [fontsLoaded] = useFonts({
     "Anton-Regular": require("../../assets/fonts/Anton.ttf"),
     "Poppins-Regular": require("../../assets/fonts/Poppins.ttf"),
@@ -69,20 +98,22 @@ export default function LandingPage() {
             <Text style={styles.header}>Announcements!</Text>
           </View>
 
-          <AnnouncementCard
-            title="Barangay Health Center Schedule"
-            description="The Barangay Health Center will be open for free health consultations every Sunday from 8:00 am to 11:00 am. Please bring your health records."
-          />
-          <AnnouncementCard
-            title="Clean-up Drive"
-            description="A barangay-wide clean-up drive will be held on March 25, 2025, at Maginhawa Street."
-          />
-          <AnnouncementCard
-            title="Traffic Advisory"
-            description="Santos Street will be closed for repairs from March 20 to April 2."
-          />
-
-          <View style={{ height: 100 }} />
+          {loadingAnnouncements ? (
+            <ActivityIndicator size="small" color="#0000ff" />
+          ) : announcements.length > 0 ? (
+            announcements.map((announcement) => (
+              <AnnouncementCard
+                key={announcement.id || announcement.announcement_header}
+                title={announcement.announcement_header}
+                description={announcement.announcement_content}
+                timestamp={announcement.created_at}
+              />
+            ))
+          ) : (
+            <Text style={{ textAlign: 'center', padding: 20 }}>
+              No announcements available
+            </Text>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>

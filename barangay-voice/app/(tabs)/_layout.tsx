@@ -4,6 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme'; 
 
+type TabBarIconProps = {
+  color: string;
+  size?: number;
+  focused: boolean;
+};
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
@@ -29,7 +35,7 @@ export default function TabLayout() {
         options={{
           tabBarLabel: () => null,
           title: 'Home',
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color }: TabBarIconProps) => (
             <Ionicons name="home" size={28} color={color} />
           ),
         }}
@@ -41,7 +47,7 @@ export default function TabLayout() {
         options={{
           tabBarLabel: () => null,
           title: 'Concerns',
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color }: TabBarIconProps) => (
             <Ionicons name="megaphone" size={28} color={color} />
           ),
         }}
@@ -53,7 +59,7 @@ export default function TabLayout() {
         options={{
           tabBarLabel: () => null,
           title: 'Emergency',
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color }: TabBarIconProps) => (
             <Ionicons name="call" size={28} color={color} />
           ),
         }}
@@ -65,7 +71,7 @@ export default function TabLayout() {
         options={{
           tabBarLabel: () => null,
           title: 'Jobs',
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color }: TabBarIconProps) => (
             <Ionicons name="notifications" size={28} color={color} /> 
           ),
         }}
@@ -77,7 +83,7 @@ export default function TabLayout() {
         options={{
           tabBarLabel: () => null,
           title: 'Profile',
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color }: TabBarIconProps) => (
             <Ionicons name="person-circle" size={28} color={color} />
           ),
         }}

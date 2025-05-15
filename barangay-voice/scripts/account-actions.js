@@ -244,3 +244,19 @@ export const fetchUserConcerns = async (userId) => {
     return [];
   }
 };
+
+export const fetchAnnouncements = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('announcement_header, announcement_content, created_at')
+      .order('created_at', { ascending: false }); // Newest first
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching announcements:', error);
+    return [];
+  }
+};
