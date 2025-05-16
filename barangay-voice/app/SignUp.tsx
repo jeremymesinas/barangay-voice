@@ -79,7 +79,7 @@ export default function SignUp() {
       alert("Registration Failed");
     } else {
       alert("Registration successful! Check your email for the OTP.");
-      router.push("/SignUpOTP");
+      router.push("/LogIn");
     }
   };
 
