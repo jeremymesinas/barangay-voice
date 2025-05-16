@@ -11,6 +11,8 @@ import {
   SafeAreaView,
   Platform,
   ActivityIndicator,
+  TextInput,
+  Alert,
 } from 'react-native';
 import OngoingCall from '../ongoingcall';
 import { Linking } from 'react-native';
@@ -19,6 +21,8 @@ export default function EmergencyResponseScreen() {
   const [address, setAddress] = useState<string | null>(null);
   const [isCalling, setIsCalling] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [isTexting, setIsTexting] = useState(false);
+  const [message, setMessage] = useState('');
   const [location, setLocation] = useState<{
     coords: {
       latitude: number;
@@ -41,7 +45,7 @@ export default function EmergencyResponseScreen() {
   
       let location = await Location.getCurrentPositionAsync({});
       setLocation(location);
-            const reverseGeocode = async () => {
+      const reverseGeocode = async () => {
         try {
           const addresses = await Location.reverseGeocodeAsync({
             latitude: location.coords.latitude,
@@ -69,7 +73,6 @@ export default function EmergencyResponseScreen() {
     })();
   }, []);
 
-
   const handleCall = async () => {
     callCancelledRef.current = false;
     setIsCalling(true);
@@ -80,7 +83,6 @@ export default function EmergencyResponseScreen() {
       });
       setLocation(freshLocation);
       
-      // Reverse geocode the fresh location
       const addresses = await Location.reverseGeocodeAsync({
         latitude: freshLocation.coords.latitude,
         longitude: freshLocation.coords.longitude,
@@ -101,8 +103,11 @@ export default function EmergencyResponseScreen() {
       
       console.log('Emergency location:', {
         coords: freshLocation.coords,
-        address: formattedAddress // Now properly defined
+        address: formattedAddress
       });
+      
+      // Open phone dialer with emergency number
+      Linking.openURL(`tel:09174654689`);
       
     } catch (error) {
       console.warn('Error:', error);
@@ -116,13 +121,51 @@ export default function EmergencyResponseScreen() {
     }, 3000);
   };
 
+  const handleTextEmergency = async () => {
+    try {
+      const freshLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      setLocation(freshLocation);
+      
+      const addresses = await Location.reverseGeocodeAsync({
+        latitude: freshLocation.coords.latitude,
+        longitude: freshLocation.coords.longitude,
+      });
+      
+      let formattedAddress = "Address unavailable";
+      if (addresses.length > 0) {
+        formattedAddress = [
+          addresses[0].street,
+          addresses[0].city,
+          addresses[0].region,
+          addresses[0].postalCode,
+          addresses[0].country
+        ].filter(Boolean).join(', ');
+        
+        setAddress(formattedAddress);
+      }
+      
+      const fullMessage = `BARANGAY VOICE: ${message}\n\nLocation: ${formattedAddress}\nCoordinates: ${freshLocation.coords.latitude.toFixed(4)}, ${freshLocation.coords.longitude.toFixed(4)}`;
+      
+      // Open SMS with emergency number and message
+      Linking.openURL(`sms:09174654689?body=${encodeURIComponent(fullMessage)}`);
+      
+      Alert.alert('Message Sent', 'Your emergency message has been sent to Barangay Maclab.');
+      setIsTexting(false);
+      setMessage('');
+    } catch (error) {
+      console.warn('Error:', error);
+      Alert.alert('Error', 'Failed to send emergency message. Please try again.');
+    }
+  };
+
   if (isConnected) {
     return <OngoingCall onEndCall={() => {
       setIsCalling(false);
       setIsConnected(false);
     }} />;
   }
-  
 
   return (
     <View style={styles.wrapper}>
@@ -155,10 +198,36 @@ export default function EmergencyResponseScreen() {
                 style={styles.cancelBtn}
                 >
                 <Text style={styles.cancelText}>Cancel call</Text>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
               <Text style={styles.subtitle}>Keep calm. Help is on the way…</Text>
               <ActivityIndicator size="small" color="#EA3A57" style={{ marginVertical: 30 }} />
+            </>
+          ) : isTexting ? (
+            <>
+              <Text style={styles.title}>Send Emergency Message</Text>
+              <TextInput
+                style={styles.messageInput}
+                multiline
+                numberOfLines={4}
+                placeholder="Describe your emergency situation..."
+                value={message}
+                onChangeText={setMessage}
+              />
+              <View style={styles.buttonRow}>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.sendButton]}
+                  onPress={handleTextEmergency}
+                >
+                  <Text style={styles.buttonText}>Send Message</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.cancelButton]}
+                  onPress={() => setIsTexting(false)}
+                >
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
             </>
           ) : (
             <>
@@ -169,6 +238,13 @@ export default function EmergencyResponseScreen() {
               <Text style={styles.subtitle}>
                 Press the button if you think you are in danger. You will be directed to a call with Barangay Maclab.
               </Text>
+              
+              <TouchableOpacity 
+                style={styles.textEmergencyButton}
+                onPress={() => setIsTexting(true)}
+              >
+                <Text style={styles.textEmergencyButtonText}>Or send a text message instead</Text>
+              </TouchableOpacity>
             </>
           )}
 
@@ -180,8 +256,6 @@ export default function EmergencyResponseScreen() {
                 <Text style={styles.locationText}>
                   📍 Lat: {location.coords.latitude.toFixed(4)}, 
                   Long: {location.coords.longitude.toFixed(4)}
-                  {'\n'}
-                  {/* Accuracy: {location.coords.accuracy ? `${location.coords.accuracy.toFixed(0)} meters` : 'Unknown'} */}
                 </Text>
                 {address && (
                   <Text style={[styles.locationText, { marginTop: 8 }]}>
@@ -193,7 +267,7 @@ export default function EmergencyResponseScreen() {
               <Text style={styles.locationText}>📍 Getting your location...</Text>
             )}
           </View>
-            <TouchableOpacity 
+          <TouchableOpacity 
             onPress={() => {
               if (location) {
                 const url = `https://www.google.com/maps/search/?api=1&query=${location.coords.latitude},${location.coords.longitude}`;
@@ -296,7 +370,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center', 
   },
-  
   content: {
     alignItems: 'center',
   },
@@ -339,6 +412,52 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     color: '#EA3A57',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  textEmergencyButton: {
+    marginTop: 20,
+    padding: 10,
+  },
+  textEmergencyButtonText: {
+    color: '#EA3A57',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textDecorationLine: 'underline',
+  },
+  messageInput: {
+    width: '100%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 20,
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 20,
+  },
+  actionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+    flex: 1,
+    marginHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButton: {
+    backgroundColor: '#EA3A57',
+  },
+  cancelButton: {
+    backgroundColor: '#DAF0A2',
+  },
+  buttonText: {
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
   },

@@ -260,3 +260,209 @@ export const fetchAnnouncements = async () => {
     return [];
   }
 };
+
+export const createEmergencyCall = async (userId, location, address) => {
+  const { data, error } = await supabase
+    .from('emergency_calls')
+    .insert([{
+      caller_id: userId,
+      caller_location: location,
+      caller_address: address,
+      status: 'active'
+    }])
+    .select()
+    .single();
+
+  return { data, error };
+};
+
+export const sendCallMessage = async (callId, senderId, message) => {
+  const { data, error } = await supabase
+    .from('emergency_messages')
+    .insert([{
+      call_id: callId,
+      sender_id: senderId,
+      message_text: message
+    }])
+    .select();
+
+  return { data, error };
+};
+
+// Both: Get call messages
+export const getCallMessages = async (callId) => {
+  const { data, error } = await supabase
+    .from('emergency_messages')
+    .select(`
+      *,
+      sender:sender_id (name)
+    `)
+    .eq('call_id', callId)
+    .order('created_at', { ascending: true });
+
+  return { data, error };
+};
+
+// Cancel emergency call
+export const cancelEmergencyCall = async (callId) => {
+  try {
+    const { error } = await supabase
+      .from('emergency_calls')
+      .delete()
+      .eq('id', callId);
+
+    return { error };
+  } catch (error) {
+    return { error: error.message };
+  }
+};
+
+// Get active call for current user
+export const getActiveUserCall = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('emergency_calls')
+      .select('*')
+      .eq('caller_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    return { data, error };
+  } catch (error) {
+    return { data: null, error: error.message };
+  }
+};
+
+export const sendEmergencyMessage = async (userId, message, location) => {
+  try {
+    const { data, error } = await supabase
+      .from('emergency_messages')
+      .insert([{
+        user_id: userId,
+        message: message,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        location_address: location.address,
+        status: 'pending'
+      }])
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  } catch (error) {
+    console.error('Error sending emergency:', error);
+    throw error;
+  }
+};
+
+// 2. Get User's Emergency History
+export const getEmergencyHistory = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('emergency_messages')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    throw error;
+  }
+};
+
+// 3. Admin/Responder Actions
+export const getPendingEmergencies = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('emergency_messages')
+      .select(`
+        id,
+        message,
+        latitude,
+        longitude,
+        location_address,
+        created_at,
+        user:user_id (id, phone)
+      `)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching emergencies:', error);
+    throw error;
+  }
+};
+
+export const updateEmergencyStatus = async (messageId, status, responderId = null) => {
+  try {
+    const updates = {
+      status,
+      responded_at: new Date().toISOString(),
+      ...(responderId && { responder_id: responderId })
+    };
+
+    const { data, error } = await supabase
+      .from('emergency_messages')
+      .update(updates)
+      .eq('id', messageId)
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  } catch (error) {
+    console.error('Error updating status:', error);
+    throw error;
+  }
+};
+
+// 4. User Profile Actions
+export const updateEmergencyContact = async (userId, contactNumber) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: userId,
+        emergency_contact: contactNumber
+      })
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  } catch (error) {
+    console.error('Error updating contact:', error);
+    throw error;
+  }
+};
+
+// 5. Real-time Subscriptions
+export const subscribeToEmergencies = (callback) => {
+  return supabase
+    .channel('emergency_updates')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'emergency_messages',
+        filter: 'status=eq.pending'
+      },
+      (payload) => callback(payload.new)
+    )
+    .subscribe();
+};
+
+// Helper: Format location for display
+export const formatLocation = (emergency) => {
+  return {
+    coords: {
+      latitude: emergency.latitude,
+      longitude: emergency.longitude
+    },
+    address: emergency.location_address || 'Address unavailable',
+    timestamp: new Date(emergency.created_at).getTime()
+  };
+};
